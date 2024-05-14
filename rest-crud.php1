@@ -1,0 +1,108 @@
+<?php
+/*
+ * Plugin Name: Rest Crud Plugin
+ * Description: This plugin provides functionality for adding and displaying data in a custom table. 
+ * It also includes search functionality & custom endpoint to insert and OOP Try
+ * Version: 1.0.0
+ * Requires at least: 5.0
+ * Requires PHP: 7.0
+ * Author: Shams Khan
+ * Author URI: https://shamskhan.com
+ * License: GPL-2.0+
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Update URI:
+ * Text Domain: custom-table
+ * Domain Path: /languages/asset/
+ */
+
+// Plugin class definition
+class Custom_Form_Plugin {
+    // Constructor
+    public function __construct() {
+        // Initialize WordPress hooks
+        add_action('rest_api_init', array($this, 'register_rest_endpoint')); // Register REST endpoint
+        add_shortcode('custom_form', array($this, 'render_custom_form_shortcode')); // Register shortcode
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts')); // Enqueue scripts
+    }
+
+    // Register custom REST endpoint
+    public function register_rest_endpoint() {
+        register_rest_route('custom-form/v1', '/submit', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'handle_form_submission'),
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
+    }
+
+    // Callback function to handle form submission
+    public function handle_form_submission($request) {
+        // Check nonce
+        $nonce = $request->get_header('X-WP-Nonce');
+        if ( ! wp_verify_nonce( $nonce, 'custom_form_nonce' ) ) {
+            return new WP_Error( 'invalid_nonce', 'Invalid nonce.', array( 'status' => 403 ) );
+        }
+
+        $parameters = $request->get_params();
+
+        // Validate form data
+        if (!isset($parameters['name']) || !isset($parameters['email'])) {
+            return new WP_Error('invalid_data', 'Name and email address are required.', array('status' => 400));
+        }
+
+        // Sanitize and insert data into database
+        $name = sanitize_text_field($parameters['name']);
+        $email = sanitize_email($parameters['email']);
+        
+        // Insert data into custom table (replace 'wp_custom_table' with your actual table name)
+        global $wpdb;
+        $wpdb->insert(
+            'wp_form_submission',
+            array(
+                'name' => $name,
+                'email' => $email,
+            ),
+            array('%s', '%s')
+        );
+
+        // Return success response
+        return array(
+            'message' => 'Form submitted successfully.',
+        );
+    }
+
+    // Render custom form shortcode
+    public function render_custom_form_shortcode($atts) {
+        // Output HTML form with nonce
+        $nonce = wp_create_nonce('custom_form_nonce');
+        $form_html = '<form id="custom-form">
+                        <label for="name">Name:</label>
+                        <input type="text" name="name" id="name" required><br>
+                        <label for="email">Email Address:</label>
+                        <input type="email" name="email" id="email" required><br>
+                        <input type="hidden" name="nonce" value="' . $nonce . '">
+                        <input type="submit" value="Submit">
+                      </form>';
+        return $form_html;
+    }
+
+    // Enqueue scripts for Ajax
+    public function enqueue_scripts() {
+        // Enqueue jQuery if not already loaded
+        wp_enqueue_script('jquery');
+        
+        // Enqueue custom script for form submission
+        wp_enqueue_script('custom-form-script', plugin_dir_url(__FILE__) . 'js/custom-script.js', array('jquery'), '1.0', true);
+        
+        // Localize script with nonce for Ajax security
+        wp_localize_script('custom-form-script', 'customFormAjax', array(
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('custom_form_nonce')
+        ));
+    }
+}
+
+// Instantiate the plugin class
+new Custom_Form_Plugin();
+?>

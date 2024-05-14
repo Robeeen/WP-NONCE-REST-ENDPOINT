@@ -1,7 +1,13 @@
 .simple-contact-form{
   margin: auto;
-  width: 50%;
+  width: 40%;
   border: 3px solid green;
   padding: 10px;
-  text-align: center;
+  text-align: left;
+  margin-top: 1%;
+  margin-bottom: 15%;
+}
+.heading{
+    text-align: center;
+    margin-top: 80px;
 }

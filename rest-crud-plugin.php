@@ -27,6 +27,8 @@ class restPlugin{
         //Create Shortcodes for front-ends
         add_shortcode('my_form', array($this, 'my_shortcode_form'));
         add_shortcode('my_list', array($this, 'my_shortcode_list'));
+        //Create and load script ajax-jquery for 
+        add_action('wp_footer', array($this, 'load_scripts'));
         //Create and Register new Rest Route/endpoint/
         add_action('rest_api_init', array($this, 'registering_routes'));
     }
@@ -45,13 +47,16 @@ class restPlugin{
         // Callback function for shortcode1
     public function my_shortcode_form(){
        // $data = insert_data_to_my_table();?>
+    <div class="heading">
     <h3>Fill the form to create user</h3>
     <p>Implementation of CSRF using nonce & ajax to use endpoints</p>
+    </div>   
+   
        <div class="simple-contact-form">
             <form id="create-user">
                 <div class="form-group">
                     <label for="fullname">Full Name</label>
-                    <input type="text" class="form-control" id="fullname" aria-describedby="namelHelp" placeholder="Enter email">
+                    <input type="text" class="form-control" id="fullname" aria-describedby="namelHelp" placeholder="Enter name">
                 </div>
                 <div class="form-group">
                     <label for="emaill">Email address</label>
@@ -64,131 +69,60 @@ class restPlugin{
 
     <?php }   
 
-    public function insert_data_to_my_table(){
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'form_submission';
-        if (isset($_POST['submit'])) {
-          $name = sanitize_text_field($_POST['names']);
-          $email = sanitize_email($_POST['email']);
-          $format = array( '%s', '%s' );
-          $wpdb->insert($table_name, array('name' => $name, 'email' => $email), $format );    
-         }      
-     ?>
-     <div class="card-body">
-        <div class="wrap">
-           <h3>Add Information</h3>
-             <table class="table">
-                 <thead>
-                     <tr>
-                         <th>User ID</th>
-                         <th>Name</th>
-                         <th>Email Address</th>
-                         <th>Actions</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                     <form action="" method="post" id="simple-form">
-                         <tr>
-                             <td><input type="text" value="AUTO_GENERATED" disabled style="width:100%"></td>
-                             <td><input type="text" required id="names" name="names" style="width:100%"></td>
-                             <td><input type="text" required id="email" name="email" style="width:100%"></td>
-                             <td><input type="submit" name="submit" type="submit" style="width:100%"></td>
-                         </tr>
-                     </form>
-                 </tbody>
-             </table>
-         </div>
-     </div>
-     <?php
-     }
-// Callback function for shortcode2
-     public function my_shortcode_list() {
-        global $wpdb;       
-        $results = '<div class="card-body"><table class="table">
-                   <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>name</th>
-                        <th>email id</th>
-                    </tr>
-                </thead>
-            <tbody>';
-    
-            // sending query
-            $WPQuery = $wpdb->get_results ("SELECT * FROM wp_form_submission");
-                foreach ( $WPQuery as $print )   {
-                    $results .= "<tr>
-                                <td>$print->id</td>
-                                <td>$print->name</td>
-                                <td>$print->email</td>
-                            </tr>";
-                        }
-                    $results .= "</tbody></table></div>";
-    
-        //Print results
-        echo $results;
-        
-        //Call the Search function on table
-     $search = get_my_table_data();
-    }
-    
-    //Create serach function from table to display data.
-    public function get_my_table_data(){
-        global $wpdb;
-       ?>
-       <div class="card-body"><h3>Search on Table</h3>
-       <form action="" method="get">
-        <input type="text" required id="searchme" name="searchme" value='<?php if(isset($_GET['searchme'])){echo $_GET['searchme'];}?>' placeholder="Search">
-        <input type="submit" id="search-item" name="search-item" value="search">
-        </form>
-        <table class="table">
-                <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>name</th>
-                        <th>email id</th>
-                    </tr>
-                </thead>
-                <tbody>
-        <?php
-        
-        $table_name = $wpdb->prefix . 'form_submission';
-        if (isset($_GET['searchme'])) {
-            $input = sanitize_text_field($_GET['searchme']);
-            $sresults = $wpdb->get_results( "SELECT * FROM $table_name WHERE name LIKE '%$input%'" );
-            if($sresults){
-            foreach($sresults as $display){
-                echo "<tr><td>$display->id</td>";
-                echo "<td>$display->name</td>";
-                echo "<td>$display->email</td>";
-                echo "</tr>";
-                echo "</tbody>";
-                echo "</table></div>";  
-            } }else echo "Not found";
-        }else echo "<table>";
-    }
-    
+// create js to handle the nonce, endpoint, form submission by jquery
+public function load_scripts(){?>
+    <script>
+        var nonce = '<?php echo wp_create_nonce('wp-rest');?>';
+       // console.log(nonce);
+        (function($){
+            $('#create-user').submit(function(e){
+                e.preventDefault();
+                var form = $(this).serialize();
+                //console.log(form);
 
+                $.ajax({
+                    method: 'post',
+                    url: '<?php echo get_rest_url(null, 'test-mine/v1/create-user/');?>',
+                    headers: { 'X-WP-Nonce': nonce },
+                    data: form
+
+
+                })
+               
+            });
+
+        
+        })(jQuery)
+
+
+
+
+    </script>
+
+<?php }
     //endpoint to display data from the table
  public function registering_routes(){
-    register_rest_route(
-        'form_submission_route/v1',
-        '/form-submission',
-        array(
-            'method' => 'GET',
-            'callback' => 'form_sub_callback',
-            'permission_callback' => '__return_true'
-        )
-    );
+    // register_rest_route(
+    //     'form_submission_route/v1',
+    //     '/form-submission',
+    //     array(
+    //         'method' => 'GET',
+    //         'callback' => 'form_sub_callback',
+    //         'permission_callback' => '__return_true'
+    //     )
+    // );
 
     //endpoint to insert data to the table
     register_rest_route(
-        'form_submission_route/v1',
+        'test-mine/v1',
         '/create-user',
         array(
             'methods' => WP_REST_SERVER::CREATABLE,
-            'callback' => 'form_get_callback',
-            'permission_callback' => 'wp_check_permission'
+            //'methods' => POST,
+            'permission_callback' => '__return_true',
+            'callback' => array($this, 'form_get_callback'),
+           //'permission_callback' => 'wp_check_permission'
+            
         )
     );
 }
@@ -207,18 +141,29 @@ public function wp_check_permission(){
 }
 
 //callback function to insert data to table
-public function form_get_callback($request){
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'form_submission';
+public function form_get_callback($data){
 
-    $row = $wpdb->insert(
-        $table_name,
-        array(
-            'name' => $request['name'],
-            'email' => $request['email']
-        )
-    );
-    return $row;
+
+	// $headers = $data->get_headers();
+	// //$params = $data->get_params();
+	// $nonce = $headers['x_wp_nonce'];
+	
+	// if(!wp_verify_nonce($nonce, 'wp_rest')){
+	// 	return new WP_REST_response('Message not sent', 422);
+	// }
+
+    echo "This endpoint is working nicely";
+    // global $wpdb;
+    // $table_name = $wpdb->prefix . 'form_submission';
+
+    // $row = $wpdb->insert(
+    //     $table_name,
+    //     array(
+    //         'name' => $request['name'],
+    //         'email' => $request['email']
+    //     )
+    // );
+    // return $row;
 }
 }
 
