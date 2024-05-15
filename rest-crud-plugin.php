@@ -85,20 +85,10 @@ public function load_scripts(){?>
                     url: '<?php echo get_rest_url(null, 'test-mine/v1/create-user/');?>',
                     headers: { 'X-WP-Nonce': nonce },
                     data: form
-
-
-                })
-               
+                })               
             });
-
-        
         })(jQuery)
-
-
-
-
     </script>
-
 <?php }
     //endpoint to display data from the table
  public function registering_routes(){
@@ -169,4 +159,3 @@ public function form_get_callback($data){
 
 
 $restPlugin = new restPlugin();
-
