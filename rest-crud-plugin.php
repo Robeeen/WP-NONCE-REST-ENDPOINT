@@ -92,15 +92,15 @@ public function load_scripts(){?>
 <?php }
     //endpoint to display data from the table
  public function registering_routes(){
-    // register_rest_route(
-    //     'form_submission_route/v1',
-    //     '/form-submission',
-    //     array(
-    //         'method' => 'GET',
-    //         'callback' => 'form_sub_callback',
-    //         'permission_callback' => '__return_true'
-    //     )
-    // );
+    register_rest_route(
+        'form_submission_route/v1',
+        '/form-submission',
+        array(
+            'method' => 'GET',
+            'callback' => 'form_sub_callback',
+            'permission_callback' => '__return_true'
+        )
+    );
 
     //endpoint to insert data to the table
     register_rest_route(
@@ -134,26 +134,26 @@ public function wp_check_permission(){
 public function form_get_callback($data){
 
 
-	// $headers = $data->get_headers();
-	// //$params = $data->get_params();
-	// $nonce = $headers['x_wp_nonce'];
+	$headers = $data->get_headers();
+	//$params = $data->get_params();
+	$nonce = $headers['x_wp_nonce'];
 	
-	// if(!wp_verify_nonce($nonce, 'wp_rest')){
-	// 	return new WP_REST_response('Message not sent', 422);
-	// }
+	if(!wp_verify_nonce($nonce, 'wp_rest')){
+		return new WP_REST_response('Message not sent', 422);
+	}
 
     echo "This endpoint is working nicely";
-    // global $wpdb;
-    // $table_name = $wpdb->prefix . 'form_submission';
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'form_submission';
 
-    // $row = $wpdb->insert(
-    //     $table_name,
-    //     array(
-    //         'name' => $request['name'],
-    //         'email' => $request['email']
-    //     )
-    // );
-    // return $row;
+    $row = $wpdb->insert(
+        $table_name,
+        array(
+            'name' => $request['name'],
+            'email' => $request['email']
+        )
+    );
+    return $row;
 }
 }
 
